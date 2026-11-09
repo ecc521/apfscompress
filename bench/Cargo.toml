@@ -1,0 +1,18 @@
+[package]
+name = "apfscompress-bench"
+version = "0.0.0"
+edition = "2024"
+publish = false
+description = "Benchmarks and parameter sweeps for apfscompress; not part of the shipped tool."
+
+[dependencies]
+apfscompress = { path = ".." }
+crushlzfse = { path = "../../crush-lz/crates/crushlzfse" }
+crushlz4 = { path = "../../crush-lz/crates/crushlz4" }
+lzbitmap = { path = "../../crush-lz/crates/lzbitmap" }
+memmap2 = "0.9"
+rayon = "1.10"
+tempfile = "3"
+
+[lints]
+workspace = true

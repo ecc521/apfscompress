@@ -1,0 +1,69 @@
+[workspace]
+members = [".", "bench"]
+# `cargo build`/`cargo test` at the root cover only the shipped crate; build
+# the benchmarks with `-p apfscompress-bench`.
+default-members = ["."]
+
+[workspace.lints.clippy]
+# Locks in a clippy-clean tree for CI. Not `pedantic` - many deliberate `as`
+# casts (offset/size math) would drown in `cast_possible_truncation` noise.
+all = { level = "warn", priority = -1 }
+
+[package]
+name = "apfscompress"
+version = "0.1.0"
+edition = "2024"
+license = "MPL-2.0"
+description = "Transparent APFS file compression (decmpfs) that races denser LZFSE, LZVN, LZBITMAP, LZ4 and zlib encoders per file"
+readme = "README.md"
+repository = "https://github.com/ecc521/apfscompress"
+homepage = "https://github.com/ecc521/apfscompress"
+keywords = ["apfs", "compression", "decmpfs", "macos", "lzfse"]
+categories = ["command-line-utilities", "compression", "filesystem"]
+
+[lib]
+name = "apfscompress"
+path = "src/lib.rs"
+
+[[bin]]
+name = "apfscompress"
+path = "src/main.rs"
+
+[dependencies]
+libc = "0.2"
+rayon = "1.10"
+clap = { version = "4", features = ["derive"] }
+uuid = { version = "1", features = ["v4"] }
+# libcompression's COMPRESSION_ZLIB produces raw DEFLATE, not the
+# zlib-wrapped output decmpfs type 3/4 requires, so we need our own encoder.
+#
+# libdeflate over flate2/miniz_oxide: better ratio and speed at every level
+# on our corpus, at our 64 KiB chunk size. Scale runs to 12, not 9.
+libdeflater = "1"
+# Alternate encoder for Algo::Lzfse's on-disk format (see algo.rs), decoding
+# via the same system COMPRESSION_LZFSE decoder regardless of which encoder
+# wrote the bytes.
+#
+# From crush-lz (github.com/ecc521/crush-lz). The individual crates expose
+# caller-owned destination buffers and reusable encoder scratch, which the
+# crushlz umbrella API does not yet expose. Builds use the sibling checkout
+# at `path`; a published package uses `version` from crates.io.
+crushlzfse = { path = "../crush-lz/crates/crushlzfse", version = "0.1.0" }
+# The other three crush-lz codecs: same deal as crushlzfse, each emits the
+# exact bitstream the system decoder already reads. They exist because
+# libcompression's buffer API exposes no level for LZVN/LZBITMAP/LZ4.
+#   lzbitmap  -> decmpfs types 13/14
+#   crushlz4  -> decmpfs types 15/16
+# (LZVN, types 7/8, lives in crushlzfse's `lzvn` module.)
+lzbitmap = { path = "../crush-lz/crates/lzbitmap", version = "0.1.0" }
+crushlz4 = { path = "../crush-lz/crates/crushlz4", version = "0.1.0" }
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true
+
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+# This crate is macOS-only (decmpfs/APFS transparent compression). Building
+# on other platforms will fail at compile time inside src/sys.rs.
