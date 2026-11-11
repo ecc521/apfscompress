@@ -1,11 +1,9 @@
 # apfscompress
 
-Transparent file compression for macOS using Apple's decmpfs format.
-Files remain readable through normal filesystem operations; the kernel
-decompresses them on access.
+Transparent file compression for APFS. 
 
-Supports LZFSE, LZVN, LZBITMAP, LZ4 and zlib, with encoders from Apple,
-[crush-lz](https://github.com/ecc521/crush-lz) and libdeflate.
+Supports LZFSE, LZVN, LZBITMAP, LZ4 and zlib, with `Compression.framework` encoders,
+[crush-lz](https://github.com/ecc521/crush-lz) encoders, and libdeflate.
 
 ## Quick start
 
